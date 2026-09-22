@@ -4,7 +4,7 @@ export default function PatientDetailPanel({ patient, sessions, students, onReas
   return (
     <div className="panel-card detail-card">
       <div className="patient-heading">
-        {patient.foto_url ? <img className="patient-photo" src={patient.foto_url.startsWith('http') ? patient.foto_url : `${(import.meta.env.VITE_API_URL || 'http://localhost:4000/api').replace('/api', '')}${patient.foto_url}`} alt={`Paciente ${patient.nombre}`} /> : <div className="patient-photo patient-photo-empty">{patient.nombre.slice(0, 1)}</div>}
+        {patient.foto_url ? <img className="patient-photo" src={patient.foto_url.startsWith('http') ? patient.foto_url : `${(import.meta.env.VITE_API_URL || 'http://localhost:4001/api').replace('/api', '')}${patient.foto_url}`} alt={`Paciente ${patient.nombre}`} /> : <div className="patient-photo patient-photo-empty">{patient.nombre.slice(0, 1)}</div>}
         <div><h3>Ficha clínica</h3><p className="patient-heading-meta">{patient.nombre} · {patient.estado}</p></div>
         <label className="photo-upload secondary-btn">Cambiar foto<input type="file" accept="image/png,image/jpeg,image/webp" onChange={(event) => onUploadPhoto(patient.id, event.target.files?.[0])} /></label>
       </div>

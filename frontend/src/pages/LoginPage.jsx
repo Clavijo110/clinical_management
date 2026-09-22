@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import UniversityBrand from '../components/UniversityBrand.jsx';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4001/api';
 
 export default function LoginPage({ onLogin }) {
   const [email, setEmail] = useState('director@uv.edu.co');
