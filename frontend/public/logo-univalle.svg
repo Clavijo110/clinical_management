@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 965" role="img" aria-labelledby="title desc">
+  <title id="title">Universidad del Valle</title>
+  <desc id="desc">Logo institucional rojo de la Universidad del Valle</desc>
+  <rect width="680" height="700" fill="#ed0b17"/>
+  <path d="M16 16h424v214H218l96 207c-27 17-58 26-91 26-116 0-207-92-207-207V16Z" fill="#fff"/>
+  <path d="M218 230h440L449 670 218 230Zm28 22 203 383 178-383H246Z" fill="#fff"/>
+  <rect x="0" y="700" width="680" height="265" fill="#fff"/>
+  <text x="340" y="808" text-anchor="middle" fill="#ed0b17" font-family="Arial, Helvetica, sans-serif" font-size="75" font-weight="700">Universidad</text>
+  <text x="340" y="900" text-anchor="middle" fill="#ed0b17" font-family="Arial, Helvetica, sans-serif" font-size="75" font-weight="700">del Valle</text>
+  <rect x="8" y="944" width="664" height="10" fill="#ed0b17"/>
+</svg>

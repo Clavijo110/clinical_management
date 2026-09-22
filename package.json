@@ -1,0 +1,10 @@
+{
+  "name": "uv-clinical-system",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "install:all": "npm.cmd install --prefix backend && npm.cmd install --prefix frontend",
+    "dev": "powershell -ExecutionPolicy Bypass -File .\\start-dev.ps1",
+    "build": "npm.cmd --prefix frontend run build"
+  }
+}
