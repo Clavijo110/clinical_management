@@ -69,20 +69,22 @@ async function ensureSchema() {
 }
 
 export async function seedDemoData() {
-  const existing = await query('SELECT COUNT(*)::int AS total FROM users');
-  if (existing[0]?.total > 0) return;
-
-  const directorId = uuidv4();
-  const teacherOneId = uuidv4();
-  const teacherTwoId = uuidv4();
   const directorHash = await bcrypt.hash('Admin123!', 10);
   const teacherHash = await bcrypt.hash('Docente123!', 10);
 
-  await run(`INSERT INTO users (id, nombre, email, rol, password_hash) VALUES (?, ?, ?, ?, ?), (?, ?, ?, ?, ?), (?, ?, ?, ?, ?)`, [
-    directorId, 'Director Clínica', 'director@uv.edu.co', 'director', directorHash,
-    teacherOneId, 'Dra. Carolina Ruiz', 'docente1@uv.edu.co', 'docente', teacherHash,
-    teacherTwoId, 'Dr. Luis Gómez', 'docente2@uv.edu.co', 'docente', teacherHash
-  ]);
+  async function ensureUser(email, name, role, passwordHash) {
+    const existing = await query('SELECT id FROM users WHERE email = ?', [email]);
+    if (existing[0]) return existing[0].id;
+    const id = uuidv4();
+    await run('INSERT INTO users (id, nombre, email, rol, password_hash) VALUES (?, ?, ?, ?, ?)', [id, name, email, role, passwordHash]);
+    return id;
+  }
+
+  const directorId = await ensureUser('director@uv.edu.co', 'Director Clínica', 'director', directorHash);
+  const teacherOneId = await ensureUser('docente1@uv.edu.co', 'Dra. Carolina Ruiz', 'docente', teacherHash);
+  const teacherTwoId = await ensureUser('docente2@uv.edu.co', 'Dr. Luis Gómez', 'docente', teacherHash);
+  const existingStudents = await query('SELECT COUNT(*)::int AS total FROM students');
+  if (existingStudents[0]?.total > 0) return;
 
   const studentRows = [
     ['Ana María López', teacherOneId, 3], ['Mateo Ramírez', teacherOneId, 4], ['Valentina Torres', teacherOneId, 2],
