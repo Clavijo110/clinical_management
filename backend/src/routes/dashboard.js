@@ -16,8 +16,8 @@ router.get('/', requireAuth, requireRole('director', 'docente'), async (req, res
     const sessions = await query(`SELECT COUNT(*) as total FROM clinical_sessions cs JOIN students s ON s.id = cs.estudiante_id ${teacherScope}`, teacherParams);
     const patientScope = isDirector ? '' : 'WHERE s.docente_id = ?';
     const patientParams = isDirector ? [] : [req.user.id];
-    const surgical = await query(`SELECT COUNT(*) as total FROM patients p LEFT JOIN students s ON s.id = p.estudiante_id ${patientScope}${patientScope ? ' AND' : ' WHERE'} p.quirurgico = 1`, patientParams);
-    const extractions = await query(`SELECT COUNT(*) as total FROM patients p LEFT JOIN students s ON s.id = p.estudiante_id ${patientScope}${patientScope ? ' AND' : ' WHERE'} p.extracciones = 1`, patientParams);
+    const surgical = await query(`SELECT COUNT(*) as total FROM patients p LEFT JOIN students s ON s.id = p.estudiante_id ${patientScope}${patientScope ? ' AND' : ' WHERE'} p.quirurgico = true`, patientParams);
+    const extractions = await query(`SELECT COUNT(*) as total FROM patients p LEFT JOIN students s ON s.id = p.estudiante_id ${patientScope}${patientScope ? ' AND' : ' WHERE'} p.extracciones = true`, patientParams);
     const unassigned = await query(`SELECT COUNT(*) as total FROM patients p LEFT JOIN students s ON s.id = p.estudiante_id ${patientScope}${patientScope ? ' AND' : ' WHERE'} p.estado = 'sin_asignar'`, patientParams);
 
     const bySemestre = await query(`SELECT s.semestre_actual AS semestre, COUNT(*) as total FROM students s ${teacherScope} GROUP BY s.semestre_actual ORDER BY semestre`, teacherParams);

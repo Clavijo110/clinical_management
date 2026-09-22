@@ -11,7 +11,7 @@ router.get('/', requireAuth, requireRole('director', 'docente'), async (req, res
       SELECT r.*, e.valor, e.porcentaje
       FROM rubrics r
       LEFT JOIN rubric_evaluations e ON e.rubric_id = r.id
-      WHERE (? = 'director' OR r.activo = 1)
+      WHERE (? = 'director' OR r.activo = true)
       ORDER BY r.semestre, r.nombre
     `, [req.user.rol]);
 
@@ -33,7 +33,7 @@ router.get('/student/:studentId', requireAuth, requireRole('director', 'docente'
       SELECT r.*, e.valor, e.porcentaje, e.fecha
       FROM rubrics r
       LEFT JOIN rubric_evaluations e ON e.rubric_id = r.id AND e.estudiante_id = ?
-      WHERE r.activo = 1
+      WHERE r.activo = true
       ORDER BY r.semestre, r.nombre
     `, [req.params.studentId]);
 
@@ -86,7 +86,7 @@ router.post('/evaluate', requireAuth, requireRole('director', 'docente'), async 
     if (req.user.rol === 'docente' && student[0].docente_id !== req.user.id) {
       return res.status(403).json({ message: 'No puede evaluar a un estudiante ajeno.' });
     }
-    const rubric = await query('SELECT * FROM rubrics WHERE id = ? AND activo = 1', [rubric_id]);
+    const rubric = await query('SELECT * FROM rubrics WHERE id = ? AND activo = true', [rubric_id]);
     if (!rubric[0]) return res.status(404).json({ message: 'Rúbrica no encontrada.' });
     if (Number(valor) < 0 || Number(porcentaje) < 0 || Number(porcentaje) > 100) {
       return res.status(400).json({ message: 'La evaluación debe estar entre 0 y 100.' });

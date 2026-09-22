@@ -1,13 +1,10 @@
 import express from 'express';
-import fs from 'node:fs/promises';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { v4 as uuidv4 } from 'uuid';
 import { query, run, logAudit } from '../config/db.js';
 import { requireAuth, requireRole } from '../middleware/auth.js';
+import { getPatientPhotoUrl, uploadPatientPhoto } from '../services/photo-storage.js';
 
 const router = express.Router();
-const uploadsDirectory = path.join(path.dirname(fileURLToPath(import.meta.url)), '../../uploads');
 
 function getPatientScope(user) {
   if (user.rol === 'director') {
@@ -83,7 +80,8 @@ router.get('/:id', requireAuth, requireRole('director', 'docente'), async (req, 
       ORDER BY cs.fecha DESC
     `, [req.params.id]);
 
-    return res.json({ patient: patient[0], sessions });
+    const patientWithPhoto = { ...patient[0], foto_url: await getPatientPhotoUrl(patient[0].foto_url) };
+    return res.json({ patient: patientWithPhoto, sessions });
   } catch (error) {
     return res.status(500).json({ message: 'Error al consultar detalle del paciente.', error: error.message });
   }
@@ -109,7 +107,7 @@ router.post('/', requireAuth, requireRole('director', 'docente'), async (req, re
       return res.status(403).json({ message: 'No puede asignar pacientes a otro docente.' });
     }
 
-    const count = await query(`SELECT COUNT(*) as total FROM patients WHERE estudiante_id = ? AND estado = 'activo' AND strftime('%Y-%m', fecha_ingreso) = strftime('%Y-%m', ?)`, [estudiante_id, fecha_ingreso]);
+    const count = await query(`SELECT COUNT(*) as total FROM patients WHERE estudiante_id = ? AND estado = 'activo' AND date_trunc('month', fecha_ingreso) = date_trunc('month', ?::date)`, [estudiante_id, fecha_ingreso]);
     if (Number(count[0].total) >= 10) {
       return res.status(400).json({ message: 'El estudiante ya alcanzó el máximo de 10 pacientes activos por mes.' });
     }
@@ -130,8 +128,8 @@ router.post('/', requireAuth, requireRole('director', 'docente'), async (req, re
       null,
       diagnostico || '',
       tipo_maloclusion || '',
-      quirurgico ? 1 : 0,
-      extracciones ? 1 : 0,
+      Boolean(quirurgico),
+      Boolean(extracciones),
       notas || '',
       estudiante_id || null,
       Number(semestre),
@@ -181,8 +179,8 @@ router.patch('/:id', requireAuth, requireRole('director', 'docente'), async (req
       edad ?? existing[0].edad,
       diagnostico ?? existing[0].diagnostico,
       tipo_maloclusion ?? existing[0].tipo_maloclusion,
-      quirurgico !== undefined ? (quirurgico ? 1 : 0) : existing[0].quirurgico,
-      extracciones !== undefined ? (extracciones ? 1 : 0) : existing[0].extracciones,
+      quirurgico !== undefined ? Boolean(quirurgico) : existing[0].quirurgico,
+      extracciones !== undefined ? Boolean(extracciones) : existing[0].extracciones,
       notas ?? existing[0].notas,
       nextEstudiante,
       semestre ?? existing[0].semestre,
@@ -226,7 +224,7 @@ router.patch('/:id/reassign', requireAuth, requireRole('director', 'docente'), a
       return res.status(403).json({ message: 'No puede reasignar a un estudiante ajeno.' });
     }
 
-    const count = await query(`SELECT COUNT(*) as total FROM patients WHERE estudiante_id = ? AND estado = 'activo' AND strftime('%Y-%m', fecha_ingreso) = strftime('%Y-%m', ?)`, [estudiante_id, patient[0].fecha_ingreso]);
+    const count = await query(`SELECT COUNT(*) as total FROM patients WHERE estudiante_id = ? AND estado = 'activo' AND date_trunc('month', fecha_ingreso) = date_trunc('month', ?::date)`, [estudiante_id, patient[0].fecha_ingreso]);
     if (Number(count[0].total) >= 10) {
       return res.status(400).json({ message: 'El estudiante ya alcanzó el máximo de 10 pacientes activos.' });
     }
@@ -262,17 +260,14 @@ router.post('/:id/photo', requireAuth, requireRole('director', 'docente'), async
   }
 
   const extension = match[1].split('/')[1].replace('jpeg', 'jpg');
-  const filename = `${req.params.id}-${Date.now()}.${extension}`;
-  const filePath = path.join(uploadsDirectory, filename);
   const buffer = Buffer.from(match[2], 'base64');
   if (buffer.length > 5 * 1024 * 1024) return res.status(400).json({ message: 'La imagen no puede superar 5 MB.' });
 
   try {
-    await fs.mkdir(uploadsDirectory, { recursive: true });
-    await fs.writeFile(filePath, buffer);
-    const photoUrl = `/uploads/${filename}`;
-    await run('UPDATE patients SET foto_url = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?', [photoUrl, req.params.id]);
-    await logAudit({ userId: req.user.id, action: 'UPLOAD_PHOTO', entity: 'patients', entityId: req.params.id, oldValue: { foto_url: patient[0].foto_url }, newValue: { foto_url: photoUrl } });
+    const photoPath = await uploadPatientPhoto(req.params.id, buffer, match[1], extension);
+    await run('UPDATE patients SET foto_url = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?', [photoPath, req.params.id]);
+    const photoUrl = await getPatientPhotoUrl(photoPath);
+    await logAudit({ userId: req.user.id, action: 'UPLOAD_PHOTO', entity: 'patients', entityId: req.params.id, oldValue: { foto_url: patient[0].foto_url }, newValue: { foto_url: photoPath } });
     return res.json({ message: 'Fotografía actualizada.', foto_url: photoUrl });
   } catch (error) {
     return res.status(500).json({ message: 'Error al guardar fotografía.', error: error.message });

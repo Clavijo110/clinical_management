@@ -19,6 +19,7 @@ JWT_SECRET=una-clave-larga-generada-aleatoriamente
 DATABASE_URL=postgresql://...
 SUPABASE_URL=https://tu-proyecto.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=...
+SUPABASE_STORAGE_BUCKET=patient-photos
 ```
 
 Importante: la contraseña que aparece en Database Settings no es una API key. Para conectar el backend necesitas además:
@@ -28,21 +29,25 @@ Importante: la contraseña que aparece en Database Settings no es una API key. P
 - `service_role key`: Project Settings > API > Project API keys > service_role. Solo backend.
 - `DATABASE_URL`: Database > Connect > URI, con host, puerto, usuario, base y contraseña.
 
+Para Render, copia la cadena exacta de **Supabase > Connect > Session pooler**. No uses literalmente `db.tu-proyecto.supabase.co` ni dejes `[YOUR-PASSWORD]`. La URI puede usar un host `*.pooler.supabase.com` y puerto `5432` o `6543`, según la opción mostrada por Supabase. Render debe recibir la cadena completa en su variable `DATABASE_URL`.
+
 No envíes ninguna de esas claves por chat. Abre `backend/.env` localmente y pégalas allí; ese archivo está excluido por `.gitignore`.
 
 Nunca pongas `SUPABASE_SERVICE_ROLE_KEY` en `frontend/.env` ni en código React.
 
 ## 2. Migrar el esquema
 
-El MVP actual usa SQLite. Para migrar, crea las tablas PostgreSQL equivalentes a las del esquema de `README.md`, cambiando:
+El backend ya está preparado para PostgreSQL y no importa `sqlite3`. En Supabase ejecuta el esquema de `docs/supabase-schema.sql` antes del primer arranque de Render. El backend también verifica el esquema al arrancar y siembra los datos demo cuando `users` está vacío.
 
-- `TEXT` UUID por `uuid` con `gen_random_uuid()`.
-- `INTEGER` booleano por `boolean`.
+El esquema PostgreSQL usa:
+
+- UUID con `gen_random_uuid()`.
+- `boolean` para indicadores clínicos.
 - `CURRENT_TIMESTAMP` se mantiene.
 - Agrega índices sobre `students.docente_id`, `patients.estudiante_id`, `patients.fecha_ingreso`, `clinical_sessions.estudiante_id`, `clinical_sessions.paciente_id` y `audit_logs.created_at`.
 - Mantén una restricción única sobre `(estudiante_id, rubric_id)` en `rubric_evaluations`.
 
-Haz primero un respaldo de `backend/data/clinical.db`. La migración de datos debe ser un script separado que lea SQLite y escriba PostgreSQL; no la ejecutes manualmente registro por registro en producción.
+Si quieres conservar los datos de la antigua SQLite, haz una exportación antes de borrar ese archivo y migra los registros mediante un script controlado. Para una instalación nueva, el seed de PostgreSQL crea los datos demo automáticamente.
 
 ## 3. Fotografías con Storage
 
@@ -53,7 +58,7 @@ Haz primero un respaldo de `backend/data/clinical.db`. La migración de datos de
 5. El frontend muestra esa URL, nunca la clave privada.
 6. Configura políticas RLS para impedir lectura pública del bucket.
 
-En desarrollo local la aplicación usa `backend/uploads`. En producción debe usarse Storage para evitar perder archivos cuando el servidor se reinicie.
+El backend usa Supabase Storage para fotografías cuando `SUPABASE_SERVICE_ROLE_KEY` está configurada. Render no necesita conservar un directorio local de uploads.
 
 La aplicación local ya valida JPG, PNG y WEBP, con máximo de 5 MB. Para activar Storage remoto, configura `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` y el bucket privado; no uses la anon key para subir archivos desde el servidor.
 
@@ -68,6 +73,8 @@ En Render, Railway o Fly.io:
 5. Agrega las variables del backend.
 6. Expón el puerto definido por `PORT`.
 7. Verifica `https://api.tu-dominio.com/api/health`.
+
+También puedes importar el archivo `render.yaml` como Blueprint. En Render solo tendrás que completar las variables marcadas como `sync: false`.
 
 ## 5. Desplegar el frontend
 

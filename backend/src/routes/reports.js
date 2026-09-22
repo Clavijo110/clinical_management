@@ -26,14 +26,14 @@ async function getStudentReport(req, studentId) {
 
   const patients = await query(`SELECT * FROM patients WHERE estudiante_id = ? ORDER BY fecha_ingreso DESC`, [studentId]);
   const sessions = await query(`SELECT cs.*, p.nombre as paciente_nombre FROM clinical_sessions cs JOIN patients p ON p.id = cs.paciente_id WHERE cs.estudiante_id = ? ORDER BY cs.fecha DESC`, [studentId]);
-  const rubricSummary = await query(`SELECT r.semestre, r.nombre, r.peso_meta, e.valor, e.porcentaje FROM rubrics r LEFT JOIN rubric_evaluations e ON e.rubric_id = r.id AND e.estudiante_id = ? WHERE r.activo = 1 ORDER BY r.semestre, r.nombre`, [studentId]);
+  const rubricSummary = await query(`SELECT r.semestre, r.nombre, r.peso_meta, e.valor, e.porcentaje FROM rubrics r LEFT JOIN rubric_evaluations e ON e.rubric_id = r.id AND e.estudiante_id = ? WHERE r.activo = true ORDER BY r.semestre, r.nombre`, [studentId]);
   const progressBySemester = await query(`
     SELECT r.semestre, COUNT(r.id) as total_rubricas,
       COUNT(e.id) as evaluadas,
       COALESCE(ROUND(AVG(e.porcentaje), 2), 0) as porcentaje
     FROM rubrics r
     LEFT JOIN rubric_evaluations e ON e.rubric_id = r.id AND e.estudiante_id = ?
-    WHERE r.activo = 1
+    WHERE r.activo = true
     GROUP BY r.semestre
     ORDER BY r.semestre
   `, [studentId]);

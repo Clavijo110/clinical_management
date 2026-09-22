@@ -6,7 +6,7 @@ Se implementa una solución full-stack con:
 
 - Frontend: React + Vite + CSS modular
 - Backend: Node.js + Express
-- Base de datos: SQLite para entorno local y preparación para migración a PostgreSQL/Supabase
+- Base de datos: PostgreSQL mediante Supabase
 - Autenticación: JWT con hashes bcrypt
 - Almacenamiento de archivos: almacenamiento local para MVP, preparado para Supabase Storage
 - PDF: jsPDF para reportes semestrales
@@ -167,7 +167,7 @@ La aplicación quedará disponible en:
 
 También puede ejecutarse con `npm.cmd run dev`. El script crea automáticamente `backend/data` para SQLite y arranca ambos servicios.
 
-La base de datos local se crea en `backend/data/clinical.db` y se inicializa con usuarios y datos demo. No se requiere instalar una base de datos adicional para el MVP.
+El backend requiere `DATABASE_URL` de PostgreSQL/Supabase y crea/verifica el esquema e inicializa los usuarios y datos demo al arrancar si la base está vacía. No depende de SQLite en producción. En Render usa la URI exacta de **Supabase > Connect > Session pooler**; el placeholder `postgresql://postgres:[YOUR-PASSWORD]@db...` no es una conexión válida.
 
 Variables opcionales:
 
@@ -189,11 +189,13 @@ Credenciales demo:
 
 Para uso local no falta ninguna dependencia externa. Para una puesta en producción todavía deben definirse:
 
-- PostgreSQL/Supabase como reemplazo de SQLite.
-- Almacenamiento privado para fotografías clínicas.
+- Proyecto PostgreSQL/Supabase configurado con `DATABASE_URL`.
+- Bucket privado de Supabase Storage para fotografías clínicas.
 - Servicio de correo para recordatorios.
 - Gestión de secretos y copias de seguridad.
 - Generación PDF nativa y exportación Excel si se requiere un archivo `.pdf` o `.xlsx` automático; el MVP actual ofrece impresión del reporte y exportación CSV compatible con Excel.
+
+El archivo `render.yaml` contiene la configuración de despliegue del backend para Render: directorio `backend`, `npm ci`, `npm start`, health check y variables secretas pendientes de completar.
 
 ## Seguridad de credenciales
 
